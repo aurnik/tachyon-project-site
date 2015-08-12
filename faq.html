@@ -1,0 +1,13 @@
+---
+layout: default
+title: FAQ
+permalink: /faq/
+---
+
+{% capture bannerContent %}
+    FAQ
+{% endcapture %}
+{% include banner.html content=bannerContent %}
+<div class="wrapper">
+    {% markdown faq.md %}
+</div>

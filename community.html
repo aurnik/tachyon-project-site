@@ -1,0 +1,62 @@
+---
+layout: default
+title: Community
+permalink: /community/
+---
+ <link rel="stylesheet" href="../css/style.css">
+{% capture bannerContent %}
+    Community
+{% endcapture %}
+{% include banner.html content=bannerContent %}
+
+<div id="vis"></div>
+
+<script src="../js/libs/d3.min.js"></script>
+<script src="../js/contributorcloud.js"></script>
+<script type="text/javascript">
+    octo = new Octokat({
+        token: "7eecf716005b189d691dc6cc69de976495927ef3"
+    });
+
+    var contributors = [];
+    var commits = 0;
+
+    // GitHub gives us 30 results at a time, so we use a recursive function to collect all contributors
+    var getAll = function(err, val) {
+        if(!err) {
+            contributors = contributors.concat(val);
+            if(val.nextPage) {
+                val.nextPage(getAll);
+            }
+            else { // done fetching results
+                var plot = Bubbles();
+                for(var i = 0; i < contributors.length; i++) {
+                    commits += contributors[i].contributions;
+                }
+                if(storageAvailable) {
+                    sessionStorage.setItem("commitCount", commits.toLocaleString());
+                    sessionStorage.setItem("contributorCount", contributors.length.toLocaleString());
+                    sessionStorage.setItem("contributors", JSON.stringify(contributors));
+                }
+
+                return root.plotData("#vis", contributors, plot);
+            }
+        }
+    }
+
+
+
+    if(storageAvailable && sessionStorage.contributors) { // web storage supported
+        var plot = Bubbles();
+        root.plotData("#vis", JSON.parse(sessionStorage.contributors), plot);
+    } else {
+        octo.repos('amplab', 'tachyon').contributors.fetch(getAll);
+    }
+
+
+
+</script>
+
+<div class="wrapper">
+    {% markdown community.md %}
+</div>

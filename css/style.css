@@ -1,0 +1,71 @@
+
+
+#vis {
+  overflow: hidden;
+  position: relative;
+  left: 0;
+  min-height: 491px;
+  background: transparent;
+  opacity: 0;
+  transition: opacity 2s;
+  -webkit-transition: opacity 2s;
+  -moz-transition: opacity 2s;
+  -o-transition: opacity 2s;
+}
+#vis.visible {
+    opacity: 1;
+}
+
+#bubble-background {
+  fill: none;
+  pointer-events: all;
+}
+
+.bubble-node {
+  /* fill: #d1e0f3; */
+  fill: #DCE9BE;
+}
+
+.bubble-hover {
+  /* fill: #b8c7d9; */
+  fill: #E8E9E7;
+}
+
+.bubble-selected {
+  /* fill: #a8c8ee;  */
+  fill: #CEE98F;
+  /* stroke: #6081a3; */
+  stroke: #A6BA92;
+  stroke-width: 1.5px;
+}
+
+.active {
+  color: #A6BA92
+}
+
+a.bubble-label {
+  font-family: georgia, "times new roman", times, serif;
+  color: inherit;
+  cursor: pointer;
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  line-height: 1em;
+  position: absolute;
+}
+
+a .bubble-label-name {
+    letter-spacing: 0.5px;
+}
+
+.bubble-label .bubble-label-value {
+  font: 11px sans-serif;
+  white-space: nowrap;
+}
+
+footer p {
+  text-align: center;
+  padding-top:20px;
+  padding-bottom:20px;
+  font: 13px sans-serif;
+}

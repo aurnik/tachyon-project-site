@@ -1,0 +1,220 @@
+---
+layout: default
+title: Downloads
+permalink: /downloads/
+---
+
+{% capture bannerContent %}
+    <div class="download version">
+        Version
+    </div>
+    <div class="download option">
+        <div onclick="inc(this)" class="button inc disabled">
+        </div>
+        <div id="major">
+            0
+        </div>
+        <div onclick="dec(this)" class="button disabled">
+        </div>
+    </div>
+    <div class="download">
+        .
+    </div>
+    <div class="download option">
+        <div onclick="inc(this)" class="button inc disabled">
+        </div>
+        <div id="minor">
+            7
+        </div>
+        <div onclick="dec(this)" class="button">
+        </div>
+    </div>
+    <div class="download">
+        .
+    </div>
+    <div class="download option">
+        <div onclick="inc(this)" class="button inc disabled">
+        </div>
+        <div id="fix">
+            0
+        </div>
+        <div onclick="dec(this)" class="button disabled">
+        </div>
+    </div>
+    <div class="download link">
+        Download
+        <div id="date">
+            Released July 17th, 2015
+        </div>
+    </div>
+{% endcapture %}
+{% include banner.html content=bannerContent %}
+<div class="wrapper">
+    {% markdown downloads.md %}
+</div>
+
+<script type="text/javascript">
+    var currentInstructions = "local";
+    var dropdown = document.getElementById("instructions");
+    var invis = document.getElementById("invisible");
+    var invisDropdown = document.getElementById("dummy");
+    var delay = 500;
+    var hidden = document.getElementsByClassName("instructionBlock");
+    var max = {major: 0, minor: 8, fix: 4};
+    var buttons = {
+        increase: {
+            "major": false,
+            "minor": false,
+            "fix": false
+        },
+        decrease: {
+            "major": false,
+            "minor": true,
+            "fix": false
+        }
+    }
+    var versionInfo = [
+        [
+            0,0,1,0,1,0,4,0
+        ]
+    ];
+    var versionDates = [
+        [
+            [],[
+                [2012, 12, 22]
+            ],[
+                [2013, 4, 10],
+                [2013, 4, 26]
+            ],[
+                [2013, 10, 22]
+            ],[
+                [2014, 2, 3],
+                [2014, 2, 26]
+            ],[
+                [2014, 7, 19]
+            ],[
+                [2015, 2, 10],
+                [2015, 3, 17],
+                [2015, 3, 31],
+                [2015, 4, 2],
+                [2015, 4, 16]
+            ],
+            [
+                [2015, 7, 17]
+            ]
+        ]
+
+    ];
+
+    for(var i = 1; i < hidden.length; i++) {
+        hidden[i].nextElementSibling.style.display = "none";
+        hidden[i].nextElementSibling.classList.add("hidden");
+    }
+
+    function switchInstructions() {
+        invis.innerText = dropdown.value;
+        dropdown.style.width = 1.03 * invisDropdown.width;
+
+        document.getElementById(currentInstructions).classList.add('hidden');
+        setTimeout(function() {
+            document.getElementById(currentInstructions).nextElementSibling.style.display = "none";
+            document.getElementById(dropdown.value).nextElementSibling.style.display = "block";
+            document.getElementById(dropdown.value).classList.remove('hidden');
+            currentInstructions = dropdown.value;
+        }, delay);
+    }
+
+    function inc(e) {
+        if(!e.classList.contains('disabled')) {
+            var next = e.nextElementSibling;
+            next.innerHTML = parseInt(next.innerHTML) + 1;
+
+            upDate(true, next.id);
+        }
+    }
+    function dec(e) {
+        if(!e.classList.contains('disabled')) {
+            var prev = e.previousElementSibling;
+            prev.innerHTML = parseInt(prev.innerHTML) - 1;
+
+            upDate(false, prev.id);
+        }
+    }
+    function upDate(increase, field) {
+        var major = parseInt(document.getElementById("major").innerHTML);
+        var minor = parseInt(document.getElementById("minor").innerHTML);
+        var fix = parseInt(document.getElementById("fix").innerHTML);
+
+        function toggleButton(increase, on, field) {
+            var number = document.getElementById(field);
+            var button;
+            if(increase) {
+                button = number.previousElementSibling;
+            }
+            else {
+                button = number.nextElementSibling;
+            }
+            if(on) {
+                button.classList.remove('disabled');
+            }
+            else {
+                button.classList.add('disabled');
+            }
+            var direction = increase ? "increase" : "decrease";
+            buttons[direction][field] = on;
+        }
+
+        if(increase) {
+            if(field == "major") {
+                document.getElementById("minor").innerHTML = minor = 0;
+                document.getElementById("fix").innerHTML = fix = 0;
+            }
+            else if(field == "minor") {
+                document.getElementById("fix").innerHTML = fix = 0;
+            }
+        }
+        else {
+            if(field == "major") {
+                document.getElementById("minor").innerHTML = minor = versionInfo[major].length - 1;
+                document.getElementById("fix").innerHTML = fix = versionInfo[major][minor];
+            }
+            else if(field == "minor") {
+                document.getElementById("fix").innerHTML = fix = versionInfo[major][minor];
+            }
+        }
+
+        if(minor > 1) {
+            toggleButton(false, true, "minor");
+        }
+        else {
+            toggleButton(false, false, "minor");
+        }
+        if(minor < versionInfo[major].length - 1) {
+            toggleButton(true, true, "minor");
+        }
+        else {
+            toggleButton(true, false, "minor");
+        }
+
+        if(fix > 0) {
+            toggleButton(false, true, "fix");
+        }
+        else {
+            toggleButton(false, false, "fix");
+        }
+        if(fix < versionInfo[major][minor]) {
+            toggleButton(true, true, "fix");
+        }
+        else {
+            toggleButton(true, false, "fix");
+        }
+
+        var d = versionDates[major][minor][fix];
+        var m = moment(d[0] + " " + d[1] + " " +d[2], "YYYY MM DD");
+        var f = m.format("MMMM Do, YYYY");
+        document.getElementById("date").innerHTML = "Released " + f;
+
+        max['minor'] = versionInfo[major].length - 1;
+        max['fix'] = versionInfo[major][minor];
+    }
+</script>
