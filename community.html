@@ -13,12 +13,8 @@ permalink: /community/
 
 <script src="../js/libs/d3.min.js"></script>
 <script src="../js/contributorcloud.js"></script>
-<script type="text/javascript">
-    octo = new Octokat({
-        token: "7eecf716005b189d691dc6cc69de976495927ef3"
-    });
-
-    var contributors = [];
+<script src="../js/githubConnect.js"></script><!-- File with GitHub key -->
+<script type="text/javascript">var contributors = [];
     var commits = 0;
 
     // GitHub gives us 30 results at a time, so we use a recursive function to collect all contributors
