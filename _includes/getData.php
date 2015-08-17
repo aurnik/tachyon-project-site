@@ -70,13 +70,44 @@ catch(Exception $e)
 	//echo $e->getMessage();
 }
 
+try
+{
+	$spreadsheet_url="https://docs.google.com/spreadsheets/d/1Rd9jr1QD5V1-F4EKK4wsqJVBnWJXgs1g5OQDWXGAANQ/pub?gid=0&single=true&output=csv";
+
+	//if(!ini_set('default_socket_timeout',    15)) echo "<!-- unable to change socket timeout -->";
+
+	if (($handle = fopen($spreadsheet_url, "r")) !== FALSE) {
+	    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+	            $spreadsheet_data[]=$data;
+	    }
+	    fclose($handle);
+		for ($i = 1; $i < count($spreadsheet_data); $i++) {
+			array_push($ticker, array(
+				"title" => $spreadsheet_data[$i][1],
+				"date" => 1000 * strtotime($spreadsheet_data[$i][0]),
+				"desc" => substr($spreadsheet_data[$i][2], 0, 150),
+				"link" => $spreadsheet_data[$i][3],
+				"type" => "event"
+			));
+		}
+
+	}
+	else {
+	    die("Problem reading csv");
+	}
+}
+catch(Exception $e)
+{
+	//echo $e->getMessage();
+}
+
 function sortByDate($a, $b) {
 	return $b['date'] - $a['date'];
 }
 usort($ticker, "sortByDate");
 foreach ($ticker as $item) {
     $calendar = "";
-    if($item['type'] == "meetup") {
+    if($item['type'] == "meetup" || $item['type'] == "event") {
         $calendar = "<div class='calendar'>
 			            <div class='month'>" .  date('M', $item['date'] / 1000) ."</div>
 			            <div class='date'>" .  date('j', $item['date'] / 1000) . "</div>
@@ -123,5 +154,4 @@ catch(Exception $e)
 {
 	//echo $e->getMessage();
 }
-
 ?>
