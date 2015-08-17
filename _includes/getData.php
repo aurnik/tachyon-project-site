@@ -87,7 +87,7 @@ try
 				"date" => 1000 * strtotime($spreadsheet_data[$i][0]),
 				"desc" => substr($spreadsheet_data[$i][2], 0, 150),
 				"link" => $spreadsheet_data[$i][3],
-				"type" => "event"
+				"type" => $spreadsheet_data[$i][4]
 			));
 		}
 
