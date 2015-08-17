@@ -2,7 +2,8 @@
 require 'php/meetup.php';
 include 'php/github-api.php';
 
-	use Milo\Github;
+use Milo\Github;
+
 $ticker = array();
 $month = 60 * 60 * 24 * 30 * 3; // three months
 $contributors = array();

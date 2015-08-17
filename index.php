@@ -80,10 +80,12 @@ title: Home
         contributors: document.getElementById("contributors"),
         commits: document.getElementById("commits"),
         age: document.getElementById("age"),
+        stars: document.getElementById("starCount"),
         stats: document.getElementById("stats")
     };
-    var contributorCount, commitCount, age;
-    if(storageAvailable && (!sessionStorage.contributorCount || !sessionStorage.commitCount) || !storageAvailable) {
+    var contributorCount, commitCount, age, stars;
+    // TODO: Only pull each piece of info when needed
+    if(storageAvailable && (!sessionStorage.contributorCount || !sessionStorage.commitCount || !sessionStorage.starCount || !sessionStorage.age) || !storageAvailable) {
         var res = <?php echo json_encode($contributors); ?>;
         var contributors = [];
         for (var i = 0; i < res.length; i++) {
@@ -117,10 +119,9 @@ title: Home
             sessionStorage.setItem("commitCount", commitCount);
         }
 
-        stats.stats.classList.add('visible');
         var stars = <?php echo $stars; ?>;
-        document.getElementById("starCount").classList.add('visible');
-        document.getElementById("starCount").innerHTML = stars.toLocaleString();
+        stats.stars.classList.add('visible');
+        stats.stars.innerHTML = stars.toLocaleString();
         if(storageAvailable) {
             sessionStorage.setItem("starCount", stars.toLocaleString());
         }
@@ -132,19 +133,23 @@ title: Home
         }
 
         stats.age.innerHTML = age + " years old";
+
+        stats.stats.classList.add('visible');
     }
     else {
         contributorCount = sessionStorage.contributorCount;
         commitCount = sessionStorage.commitCount;
         age = sessionStorage.age;
+        stars = sessionStorage.starCount;
 
         stats.contributors.innerHTML = contributorCount + " contributors";
         stats.commits.innerHTML = commitCount + " commits";
         stats.age.innerHTML = age + " years old";
         stats.stats.classList.add('visible');
 
-        document.getElementById("starCount").classList.add('visible');
-        document.getElementById("starCount").innerHTML = sessionStorage.starCount;
+
+        stats.stars.innerHTML = stars;
+        stats.stars.classList.add('visible');
     }
 
 
