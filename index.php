@@ -38,7 +38,7 @@ title: Home
     <!--img src="https://flink.apache.org/img/flink-stack-small.png"-->
     {% markdown home.md %}
     <div id="ticker">
-        {% include meetup.php %}
+        {% include getData.php %}
         <!--
         <div class="item">
             Random announcement
