@@ -1,7 +1,7 @@
 var root = {};
 var texts;
 var Bubbles = function() {
-    var chart, collide, collisionPadding, colors, data, force, gravity, height, idValue, imgValue, jitter, margin, maxRadius, minCollisionRadius, node, rScale, rValue, textValue, tick, transformData, update, updateLabels,
+    var chart, collide, collisionPadding, colors, data, force, gravity, height, idValue, jitter, margin, maxRadius, minCollisionRadius, node, rScale, rValue, textValue, tick, transformData, update, updateLabels,
         updateNodes, width, minRadius, minFontSize;
     width = window.innerWidth;
     height = 480;
@@ -26,9 +26,6 @@ var Bubbles = function() {
     };
     textValue = function(d) {
         return d.login;
-    };
-    imgValue = function(d) {
-        return d.avatarUrl;
     };
     collisionPadding = 4;
     minCollisionRadius = 12;
@@ -113,7 +110,7 @@ var Bubbles = function() {
                 return rScale(rValue(d)) * 2;
             })
             .attr("xlink:href", function(d) {
-                return d.avatarUrl;
+                return d.avatar_url;
             });
         node.append("circle")
             .attr("r", function(d) {
