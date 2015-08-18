@@ -38,39 +38,15 @@ title: Home
     <!--img src="https://flink.apache.org/img/flink-stack-small.png"-->
     {% markdown home.md %}
     <div id="ticker">
-        {% include getData.php %}
-        <!--
-        <div class="item">
-            Random announcement
+        <div class="topShadow">
+
         </div>
-        <div class="item event">
-            <div class="calendar">
-                <div class="month">
-                    SEP
-                </div>
-                <div class="date">
-                    5
-                </div>
-            </div>
-            <div class="content">
-                <h1>Tachyon @ Flink Summit</h1>
-                <p>
-                    Tachyon will have a presentation at Flink Summit
-                </p>
-            </div>
+        <div class="container">
+            {% include getData.php %}
         </div>
-        <div class="item media">
-            <div class="content">
-                <h1>Tachyon: Reliable, Memory Speed Storage for Cluster...</h1>
-                <p>
-                    Tachyon is a distributed file system enabling reliable data sharing at memory speed across cluster computing frameworks. While caching today improves...
-                </p>
-                <div class="footnote">
-                    via cs.berkeley.edu
-                </div>
-            </div>
+        <div class="bottomShadow">
+
         </div>
-        -->
     </div>
 
 </div>

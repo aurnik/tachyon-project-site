@@ -107,13 +107,41 @@ function sortByDate($a, $b) {
 usort($ticker, "sortByDate");
 foreach ($ticker as $item) {
     $calendar = "";
+	$linkStart = "";
+	$linkEnd = "";
+	$footnote = "";
+	$source = "";
+
+	if($item['link'] !== "") {
+		$linkStart = "<a href='" . $item['link'] . "'>";
+		$linkEnd = "</a>";
+
+		if($item['type'] !== "etc" && $item['type'] !== 'event') {
+			switch ($item['type']) {
+				case 'release':
+					$source = "GitHub";
+					break;
+				case 'meetup':
+					$source = "Meetup.com";
+					break;
+				case 'media':
+					$source = parse_url($item['link'])['host'];
+					break;
+				default:
+					break;
+			}
+			$footnote = "<div class='footnote'>
+			via " . $source . "
+			</div>";
+		}
+	}
     if($item['type'] == "meetup" || $item['type'] == "event") {
         $calendar = "<div class='calendar'>
 			            <div class='month'>" .  date('M', $item['date'] / 1000) ."</div>
 			            <div class='date'>" .  date('j', $item['date'] / 1000) . "</div>
 					</div>";
     }
-    echo "<a href='" . $item['link'] . "'>
+    echo $linkStart . "
 		<div class='item " . $item['type'] . "'>
 			" . $calendar . "
 			<div class='content'>
@@ -121,8 +149,9 @@ foreach ($ticker as $item) {
 				<p>
 					" . $item['desc'] . "...
 				</p>
+				" . $footnote . "
 			</div>
-		</div></a>";
+		</div>" . $linkEnd;
 }
 
 try
