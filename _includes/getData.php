@@ -1,4 +1,65 @@
 <?php
+
+$cachefile = "cache/ticker.json";
+$cachetime = 60 * 60 * 5; // 5 hours
+
+if(file_exists($cachefile) && (time() - $cachetime < filemtime($cachefile))) {
+	$cachedata = file_get_contents($cachefile);
+	$ticker = json_decode($cachedata);
+
+	foreach ($ticker as $item) {
+	    $calendar = "";
+		$linkStart = "";
+		$linkEnd = "";
+		$footnote = "";
+		$source = "";
+
+		if($item->link !== "") {
+			$linkStart = "<a href='" . $item->link . "'>";
+			$linkEnd = "</a>";
+
+			if($item->type !== "etc" && $item->type !== 'event') {
+				switch ($item->type) {
+					case 'release':
+						$source = "GitHub";
+						break;
+					case 'meetup':
+						$source = "Meetup.com";
+						break;
+					case 'media':
+						$source = parse_url($item->link)['host'];
+						break;
+					default:
+						break;
+				}
+				$footnote = "<div class='footnote'>
+				via " . $source . "
+				</div>";
+			}
+		}
+	    if($item->type == "meetup" || $item->type == "event") {
+	        $calendar = "<div class='calendar'>
+				            <div class='month'>" .  date('M', $item->date / 1000) ."</div>
+				            <div class='date'>" .  date('j', $item->date / 1000) . "</div>
+						</div>";
+	    }
+	    echo $linkStart . "
+			<div class='item " . $item->type . "'>
+				" . $calendar . "
+				<div class='content'>
+					<h1>" . $item->title . "</h1>
+					<p>
+						" . $item->desc . "...
+					</p>
+					" . $footnote . "
+				</div>
+			</div>" . $linkEnd;
+	}
+
+	exit;
+}
+ob_start();
+
 require 'php/meetup.php';
 include 'php/github-api.php';
 
@@ -183,4 +244,9 @@ catch(Exception $e)
 {
 	//echo $e->getMessage();
 }
+$fp = fopen($cachefile, "w");
+//fwrite($fp, ob_get_contents());
+fwrite($fp, json_encode($ticker));
+fclose($fp);
+ob_end_flush();
 ?>
