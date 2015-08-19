@@ -21,7 +21,9 @@ permalink: /community/index.php
     } else {
         var plot = Bubbles();
         var commits = 0;
+        console.log("hi");
         var res = <?php echo json_encode($contributors); ?>;
+        console.log(res);
         var contributors = [];
         for (var i = 0; i < res.length; i++) {
             contributors = contributors.concat(res[i]);

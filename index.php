@@ -35,7 +35,6 @@ title: Home
 {% endcapture %}
 {% include banner.html content=bannerContent %}
 <div class="wrapper">
-    <!--img src="https://flink.apache.org/img/flink-stack-small.png"-->
     {% markdown home.md %}
     <div id="ticker">
         <div class="topShadow">
@@ -50,7 +49,6 @@ title: Home
     </div>
 
 </div>
-<script src="../js/moment.min.js"></script>
 <script>
     var stats = {
         contributors: document.getElementById("contributors"),
@@ -62,6 +60,8 @@ title: Home
     var contributorCount, commitCount, age, stars;
     // TODO: Only pull each piece of info when needed
     if(storageAvailable && (!sessionStorage.contributorCount || !sessionStorage.commitCount || !sessionStorage.starCount || !sessionStorage.age) || !storageAvailable) {
+
+        console.log("hi");
         var res = <?php echo json_encode($contributors); ?>;
         var contributors = [];
         for (var i = 0; i < res.length; i++) {
@@ -122,7 +122,6 @@ title: Home
         stats.commits.innerHTML = commitCount + " commits";
         stats.age.innerHTML = age + " years old";
         stats.stats.classList.add('visible');
-
 
         stats.stars.innerHTML = stars;
         stats.stars.classList.add('visible');
