@@ -3,58 +3,44 @@ require 'php/meetup.php';
 include 'php/github-api.php';
 
 use Milo\Github;
-$tickercache = "cache/ticker.json";
+$eventscache = "cache/events.json";
+$newscache = "cache/news.json";
 $contributorcache = "cache/contributors.json";
 $statscache = "cache/stats.json";
-$cachetime = 60; // 5 hours
+$cachetime = 60 * 2 * 1; // 5 hours
 $contributors = array();
 $stats = array();
+$news = array();
 
-if(file_exists($tickercache) && (time() - $cachetime < filemtime($tickercache))) {
-	$tickercachedata = file_get_contents($tickercache);
-	$ticker = json_decode($tickercachedata);
+if(file_exists($eventscache) && (time() - $cachetime < filemtime($eventscache))) {
+	$eventscachedata = file_get_contents($eventscache);
+	$events = json_decode($eventscachedata);
+	$newscachedata = file_get_contents($newscache);
+	$news = json_decode($newscachedata);
 	$contributorcachedata = file_get_contents($contributorcache);
 	$contributors = json_decode($contributorcachedata);
 	$statscachedata = file_get_contents($statscache);
 	$stats = json_decode($statscachedata);
 	$stars = $stats[0]->stars;
 
-	foreach ($ticker as $item) {
-	    $calendar = "";
+	foreach ($events as $item) {
 		$linkStart = "";
 		$linkEnd = "";
 		$footnote = "";
 		$source = "";
 
 		if($item->link !== "") {
-			$linkStart = "<a href='" . $item->link . "'>";
+			$linkStart = "<a target='_blank' href='" . $item->link . "'>";
 			$linkEnd = "</a>";
 
-			if($item->type !== "etc" && $item->type !== 'event') {
-				switch ($item->type) {
-					case 'release':
-						$source = "GitHub";
-						break;
-					case 'meetup':
-						$source = "Meetup.com";
-						break;
-					case 'media':
-						$source = parse_url($item->link)['host'];
-						break;
-					default:
-						break;
-				}
-				$footnote = "<div class='footnote'>
-				via " . $source . "
-				</div>";
+			if($item->type == "meetup") {
+				$footnote = "<div class='footnote'>via Meetup.com</div>";
 			}
 		}
-	    if($item->type == "meetup" || $item->type == "event") {
-	        $calendar = "<div class='calendar'>
-				            <div class='month'>" .  date('M', $item->date / 1000) ."</div>
-				            <div class='date'>" .  date('j', $item->date / 1000) . "</div>
-						</div>";
-	    }
+        $calendar = "<div class='calendar'>
+			            <div class='month'>" .  date('M', $item->date / 1000) ."</div>
+			            <div class='date'>" .  date('j', $item->date / 1000) . "</div>
+					</div>";
 	    echo $linkStart . "
 			<div class='item " . $item->type . "'>
 				" . $calendar . "
@@ -70,7 +56,7 @@ if(file_exists($tickercache) && (time() - $cachetime < filemtime($tickercache)))
 }
 else {
 
-	$ticker = array();
+	$events = array();
 	$month = 60 * 60 * 24 * 30 * 3; // three months
 	$contributors = array();
 	$contributorsMin = array();
@@ -93,13 +79,13 @@ else {
 			echo $e->getMessage();
 		}
 
-		$events = $response->results;
-		foreach ($events as $event) {
+		$res = $response->results;
+		foreach ($res as $event) {
 			if($event->time / 1000 > microtime(true) - $month) {
 				if(strlen($event->name) > 45) {
 					$event->name = substr($event->name, 0, 45) . "...";
 				}
-				array_push($ticker, array(
+				array_push($events, array(
 					"title" => $event->name,
 					"date" => $event->time,
 					"desc" => substr(strip_tags(html_entity_decode($event->description)), 0, 120),
@@ -123,12 +109,11 @@ else {
 		$response = file_get_contents($url, false, $context);
 		foreach(json_decode($response) as $release) {
 			if(strtotime($release->created_at) > microtime(true) - $month) {
-				array_push($ticker, array(
-					"title" => $release->name,
-					"date" => 1000 * strtotime($release->created_at),
-					"desc" => substr($release->body, 0, 150),
+				array_push($news, array(
+					"title" => "[RELEASE] " . $release->name,
+					"date" => strtotime($release->created_at),
 					"link" => $release->html_url,
-					"type" => "release"
+					"type" => "github"
 				));
 			}
 		}
@@ -140,20 +125,40 @@ else {
 
 	try
 	{
-		$spreadsheet_url="https://docs.google.com/spreadsheets/d/1Rd9jr1QD5V1-F4EKK4wsqJVBnWJXgs1g5OQDWXGAANQ/pub?gid=0&single=true&output=csv";
+		$events_spreadsheet_url = "https://docs.google.com/spreadsheets/d/1Rd9jr1QD5V1-F4EKK4wsqJVBnWJXgs1g5OQDWXGAANQ/pub?output=csv";
+		$news_spreadsheet_url = "https://docs.google.com/spreadsheets/d/1R4sQuR4vS_mqIJ67mpoNaYuHno6N_gTJb3g9KadoVEs/pub?output=csv";
 
-		if (($handle = fopen($spreadsheet_url, "r")) !== FALSE) {
+		if (($handle = fopen($events_spreadsheet_url, "r")) !== FALSE) {
 		    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-		            $spreadsheet_data[]=$data;
+		            $events_spreadsheet_data[]=$data;
 		    }
 		    fclose($handle);
-			for ($i = 1; $i < count($spreadsheet_data); $i++) {
-				array_push($ticker, array(
-					"title" => $spreadsheet_data[$i][1],
-					"date" => 1000 * strtotime($spreadsheet_data[$i][0]),
-					"desc" => substr($spreadsheet_data[$i][2], 0, 150),
-					"link" => $spreadsheet_data[$i][3],
-					"type" => $spreadsheet_data[$i][4]
+			for ($i = 1; $i < count($events_spreadsheet_data); $i++) {
+				array_push($events, array(
+					"title" => $events_spreadsheet_data[$i][1],
+					"date" => 1000 * strtotime($events_spreadsheet_data[$i][0]),
+					"desc" => substr($events_spreadsheet_data[$i][2], 0, 150),
+					"link" => $events_spreadsheet_data[$i][3],
+					"type" => "event"
+				));
+			}
+
+		}
+		else {
+		    die("Problem reading csv");
+		}
+
+		if (($handle = fopen($news_spreadsheet_url, "r")) !== FALSE) {
+		    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+		            $news_spreadsheet_data[]=$data;
+		    }
+		    fclose($handle);
+			for ($i = 1; $i < count($news_spreadsheet_data); $i++) {
+				array_push($news, array(
+					"title" => $news_spreadsheet_data[$i][1],
+					"date" => strtotime($news_spreadsheet_data[$i][0]),
+					"link" => $news_spreadsheet_data[$i][2],
+					"type" => "news"
 				));
 			}
 
@@ -170,43 +175,26 @@ else {
 	function sortByDate($a, $b) {
 		return $b['date'] - $a['date'];
 	}
-	usort($ticker, "sortByDate");
-	foreach ($ticker as $item) {
-	    $calendar = "";
+	usort($news, "sortByDate");
+	usort($events, "sortByDate");
+	foreach ($events as $item) {
 		$linkStart = "";
 		$linkEnd = "";
 		$footnote = "";
 		$source = "";
 
 		if($item['link'] !== "") {
-			$linkStart = "<a href='" . $item['link'] . "'>";
+			$linkStart = "<a target='_blank' href='" . $item['link'] . "'>";
 			$linkEnd = "</a>";
 
-			if($item['type'] !== "etc" && $item['type'] !== 'event') {
-				switch ($item['type']) {
-					case 'release':
-						$source = "GitHub";
-						break;
-					case 'meetup':
-						$source = "Meetup.com";
-						break;
-					case 'media':
-						$source = parse_url($item['link'])['host'];
-						break;
-					default:
-						break;
-				}
-				$footnote = "<div class='footnote'>
-				via " . $source . "
-				</div>";
+			if($item['type'] == "meetup") {
+				$footnote = "<div class='footnote'>via Meetup.com</div>";
 			}
 		}
-	    if($item['type'] == "meetup" || $item['type'] == "event") {
-	        $calendar = "<div class='calendar'>
-				            <div class='month'>" .  date('M', $item['date'] / 1000) ."</div>
-				            <div class='date'>" .  date('j', $item['date'] / 1000) . "</div>
-						</div>";
-	    }
+        $calendar = "<div class='calendar'>
+			            <div class='month'>" .  date('M', $item['date'] / 1000) ."</div>
+			            <div class='date'>" .  date('j', $item['date'] / 1000) . "</div>
+					</div>";
 	    echo $linkStart . "
 			<div class='item " . $item['type'] . "'>
 				" . $calendar . "
@@ -248,8 +236,11 @@ else {
 	{
 		//echo $e->getMessage();
 	}
-	$fp = fopen($tickercache, "w");
-	fwrite($fp, json_encode($ticker));
+	$fp = fopen($eventscache, "w");
+	fwrite($fp, json_encode($events));
+	fclose($fp);
+	$fp = fopen($newscache, "w");
+	fwrite($fp, json_encode($news));
 	fclose($fp);
 	$fp = fopen($contributorcache, "w");
 	fwrite($fp, json_encode($contributorsMin));

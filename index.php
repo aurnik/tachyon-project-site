@@ -35,6 +35,12 @@ title: Home
 {% endcapture %}
 {% include banner.html content=bannerContent %}
 <div class="wrapper">
+    <div id="news">
+        UPDATES
+        <ul id="newsBullets">
+
+        </ul>
+    </div>
     {% markdown home.md %}
     <div id="ticker">
         <div class="topShadow">
@@ -47,7 +53,6 @@ title: Home
 
         </div>
     </div>
-
 </div>
 <script>
     var stats = {
@@ -58,10 +63,22 @@ title: Home
         stats: document.getElementById("stats")
     };
     var contributorCount, commitCount, age, stars;
+    var newsBox = document.getElementById("newsBullets")
+    var news = <?php echo json_encode($news); ?>;
+    var newsLen = news.length;
+    for(var i = 0; i < newsLen; i++) {
+        var listItem = document.createElement("LI");
+        var newsItem = document.createElement("A");
+        newsItem.innerHTML= news[i].title;
+        newsItem.href = news[i].link;
+        listItem.appendChild(newsItem);
+        newsBox.appendChild(listItem);
+    }
+    console.log(news);
     // TODO: Only pull each piece of info when needed
     if(storageAvailable && (!sessionStorage.contributorCount || !sessionStorage.commitCount || !sessionStorage.starCount || !sessionStorage.age) || !storageAvailable) {
 
-        console.log("hi");
+
         var res = <?php echo json_encode($contributors); ?>;
         var contributors = [];
         for (var i = 0; i < res.length; i++) {
