@@ -42,6 +42,111 @@ title: Home
         </ul>
     </div>
     {% markdown home.md %}
+    <script>
+    (function() {
+        var Lib = {
+            ajax: {
+                xhr: function() {
+                    var instance = new XMLHttpRequest();
+                    return instance;
+                },
+                getJSON: function(options, callback) {
+                    var xhttp = this.xhr();
+                    options.url = options.url || location.href;
+                    options.data = options.data || null;
+                    callback = callback ||
+                    function() {};
+                    options.type = options.type || 'json';
+                    var url = options.url;
+                    if (options.type == 'jsonp') {
+                        window.jsonCallback = callback;
+                        var $url = url.replace('callback=?', 'callback=jsonCallback');
+                        var script = document.createElement('script');
+                        script.src = $url;
+                        document.body.appendChild(script);
+                    }
+                    xhttp.open('GET', options.url, true);
+                    xhttp.send(options.data);
+                    xhttp.onreadystatechange = function() {
+                        if (xhttp.status == 200 && xhttp.readyState == 4) {
+                            callback(xhttp.responseText);
+                        }
+                    };
+                }
+            }
+        };
+
+        window.Lib = Lib;
+        })()
+
+    var stats = {
+        contributors: document.getElementById("contributors"),
+        commits: document.getElementById("commits"),
+        age: document.getElementById("age"),
+        stars: document.getElementById("starCount"),
+        stats: document.getElementById("stats")
+    };
+
+    var age = Math.round((moment.duration(moment() - moment("2012-12-21 09:43:46-08:00"))).asYears() * 100) / 100;
+
+    Lib.ajax.getJSON({
+        url: 'cache/stats.json'
+    }, function(res) {
+        var statData = JSON.parse(res)[0];
+        stats.contributors.innerHTML = statData.contributors + " contributors";
+        stats.commits.innerHTML = statData.commits + " commits";
+        stats.age.innerHTML = age + " years old";
+        stats.stats.classList.add('visible');
+
+        stats.stars.innerHTML = statData.stars;
+        stats.stars.classList.add('visible');
+    });
+
+    var newsWrapper = document.getElementById("news");
+    var newsBox = document.getElementById("newsBullets");
+
+    Lib.ajax.getJSON({
+        url: 'cache/news.json'
+    }, function(res) {
+        var news = JSON.parse(res);
+        var newsLen = news.length;
+        for(var i = 0; i < newsLen; i++) {
+            var listItem = document.createElement("LI");
+            var newsItem = document.createElement("A");
+            var date = moment(news[i].date);
+            newsItem.innerHTML= date.format('MMM Do') + " - " + news[i].title;
+            newsItem.href = news[i].link;
+            listItem.appendChild(newsItem);
+            newsBox.appendChild(listItem);
+        }
+        newsWrapper.classList.add('visible');
+    });
+
+    Lib.ajax.getJSON({
+        url: 'cache/events.json'
+    }, function(res) {
+        var events = JSON.parse(res);
+        var eventsLen = events.length;
+        var eventsString = "";
+        for(var i = 0; i < eventsLen; i++) {
+            var newEvent, linkStart, linkEnd, footnote;
+            linkStart = linkEnd = footnote = "";
+            if(events[i].link != "") {
+                linkStart = "<a target='_blank' href='" + events[i].link + "'>";
+                linkEnd = "</a>";
+
+                if(events[i].type == "meetup") {
+                    footnote = "<div class='footnote'>via Meetup.com</div>";
+                }
+            }
+            var calendar = "<div class='calendar'><div class='month'>" + moment(events[i].date / 1000).format('MMM') + "</div><div class='date'>" +  moment(events[i].date / 1000).format('D') + "</div></div>";
+            newEvent = linkStart + "<div class='item " + events[i].type + "'>" + calendar + "<div class='content'><h1>" + events[i].title + "</h1><p>" + events[i].desc + "...</p>" + footnote + "</div></div>" + linkEnd;
+
+            eventsString += newEvent;
+        }
+        document.getElementById("ticker").getElementsByClassName("container")[0].innerHTML = eventsString;
+    });
+    </script>
     <div id="ticker">
         <div class="topShadow">
 
@@ -55,94 +160,6 @@ title: Home
     </div>
 </div>
 <script>
-    var stats = {
-        contributors: document.getElementById("contributors"),
-        commits: document.getElementById("commits"),
-        age: document.getElementById("age"),
-        stars: document.getElementById("starCount"),
-        stats: document.getElementById("stats")
-    };
-    var contributorCount, commitCount, age, stars;
-    var newsBox = document.getElementById("newsBullets")
-    var news = <?php echo json_encode($news); ?>;
-    var newsLen = news.length;
-    for(var i = 0; i < newsLen; i++) {
-        var listItem = document.createElement("LI");
-        var newsItem = document.createElement("A");
-        newsItem.innerHTML= news[i].title;
-        newsItem.href = news[i].link;
-        listItem.appendChild(newsItem);
-        newsBox.appendChild(listItem);
-    }
-    console.log(news);
-    // TODO: Only pull each piece of info when needed
-    if(storageAvailable && (!sessionStorage.contributorCount || !sessionStorage.commitCount || !sessionStorage.starCount || !sessionStorage.age) || !storageAvailable) {
-
-
-        var res = <?php echo json_encode($contributors); ?>;
-        var contributors = [];
-        for (var i = 0; i < res.length; i++) {
-            contributors = contributors.concat(res[i]);
-        }
-        var commits = 0;
-        contributorCount = contributors.length.toLocaleString();
-
-        for(var i = 0; i < contributors.length; i++) {
-            commits += contributors[i].contributions;
-        }
-        commitCount = commits.toLocaleString();
-
-        stats.contributors.innerHTML = contributorCount + " contributors";
-        stats.commits.innerHTML = commitCount + " commits";
-
-
-        if(storageAvailable) {
-            sessionStorage.setItem("contributorCount", contributorCount);
-            var contributorsMin = [];
-            // minimize response for sessionStorage
-            for (var i = 0; i < contributors.length; i++) {
-                contrib = {
-                    login: contributors[i].login,
-                    avatar_url: contributors[i].avatar_url,
-                    contributions: contributors[i].contributions
-                }
-                contributorsMin.push(contrib);
-            }
-            sessionStorage.setItem("contributors", JSON.stringify(contributorsMin));
-            sessionStorage.setItem("commitCount", commitCount);
-        }
-
-        var stars = <?php echo $stars; ?>;
-        stats.stars.classList.add('visible');
-        stats.stars.innerHTML = stars.toLocaleString();
-        if(storageAvailable) {
-            sessionStorage.setItem("starCount", stars.toLocaleString());
-        }
-
-
-        age = Math.round((moment.duration(moment() - moment("2012-12-21 09:43:46-08:00"))).asYears() * 100) / 100;
-        if(storageAvailable && !sessionStorage.age) {
-            sessionStorage.setItem("age", age);
-        }
-
-        stats.age.innerHTML = age + " years old";
-
-        stats.stats.classList.add('visible');
-    }
-    else {
-        contributorCount = sessionStorage.contributorCount;
-        commitCount = sessionStorage.commitCount;
-        age = sessionStorage.age;
-        stars = sessionStorage.starCount;
-
-        stats.contributors.innerHTML = contributorCount + " contributors";
-        stats.commits.innerHTML = commitCount + " commits";
-        stats.age.innerHTML = age + " years old";
-        stats.stats.classList.add('visible');
-
-        stats.stars.innerHTML = stars;
-        stats.stars.classList.add('visible');
-    }
 
 
 </script>

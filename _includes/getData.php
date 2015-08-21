@@ -7,57 +7,56 @@ $eventscache = "cache/events.json";
 $newscache = "cache/news.json";
 $contributorcache = "cache/contributors.json";
 $statscache = "cache/stats.json";
-$cachetime = 60 * 2 * 1; // 5 hours
+$cachetime = 60 * 1 * 1; // 5 hours
 $contributors = array();
 $stats = array();
 $news = array();
 
 if(file_exists($eventscache) && (time() - $cachetime < filemtime($eventscache))) {
-	$eventscachedata = file_get_contents($eventscache);
-	$events = json_decode($eventscachedata);
-	$newscachedata = file_get_contents($newscache);
-	$news = json_decode($newscachedata);
-	$contributorcachedata = file_get_contents($contributorcache);
-	$contributors = json_decode($contributorcachedata);
-	$statscachedata = file_get_contents($statscache);
-	$stats = json_decode($statscachedata);
-	$stars = $stats[0]->stars;
+	// $eventscachedata = file_get_contents($eventscache);
+	// $events = json_decode($eventscachedata);
+	// $newscachedata = file_get_contents($newscache);
+	// $news = json_decode($newscachedata);
+	// $contributorcachedata = file_get_contents($contributorcache);
+	// $contributors = json_decode($contributorcachedata);
+	// $statscachedata = file_get_contents($statscache);
+	// $stats = json_decode($statscachedata);
 
-	foreach ($events as $item) {
-		$linkStart = "";
-		$linkEnd = "";
-		$footnote = "";
-		$source = "";
-
-		if($item->link !== "") {
-			$linkStart = "<a target='_blank' href='" . $item->link . "'>";
-			$linkEnd = "</a>";
-
-			if($item->type == "meetup") {
-				$footnote = "<div class='footnote'>via Meetup.com</div>";
-			}
-		}
-        $calendar = "<div class='calendar'>
-			            <div class='month'>" .  date('M', $item->date / 1000) ."</div>
-			            <div class='date'>" .  date('j', $item->date / 1000) . "</div>
-					</div>";
-	    echo $linkStart . "
-			<div class='item " . $item->type . "'>
-				" . $calendar . "
-				<div class='content'>
-					<h1>" . $item->title . "</h1>
-					<p>
-						" . $item->desc . "...
-					</p>
-					" . $footnote . "
-				</div>
-			</div>" . $linkEnd;
-	}
+	// foreach ($events as $item) {
+	// 	$linkStart = "";
+	// 	$linkEnd = "";
+	// 	$footnote = "";
+	// 	$source = "";
+	//
+	// 	if($item->link !== "") {
+	// 		$linkStart = "<a target='_blank' href='" . $item->link . "'>";
+	// 		$linkEnd = "</a>";
+	//
+	// 		if($item->type == "meetup") {
+	// 			$footnote = "<div class='footnote'>via Meetup.com</div>";
+	// 		}
+	// 	}
+    //     $calendar = "<div class='calendar'>
+	// 		            <div class='month'>" .  date('M', $item->date / 1000) ."</div>
+	// 		            <div class='date'>" .  date('j', $item->date / 1000) . "</div>
+	// 				</div>";
+	//     echo $linkStart . "
+	// 		<div class='item " . $item->type . "'>
+	// 			" . $calendar . "
+	// 			<div class='content'>
+	// 				<h1>" . $item->title . "</h1>
+	// 				<p>
+	// 					" . $item->desc . "...
+	// 				</p>
+	// 				" . $footnote . "
+	// 			</div>
+	// 		</div>" . $linkEnd;
+	// }
 }
 else {
 
 	$events = array();
-	$month = 60 * 60 * 24 * 30 * 3; // three months
+	$pastNewsLimit = 60 * 60 * 24 * 30 * 3; // three months
 	$contributors = array();
 	$contributorsMin = array();
 	$stars = 0;
@@ -81,7 +80,7 @@ else {
 
 		$res = $response->results;
 		foreach ($res as $event) {
-			if($event->time / 1000 > microtime(true) - $month) {
+			if($event->time / 1000 > microtime(true) - $pastNewsLimit) {
 				if(strlen($event->name) > 45) {
 					$event->name = substr($event->name, 0, 45) . "...";
 				}
@@ -102,16 +101,42 @@ else {
 
 	try
 	{
-		// TODO: use API to get this
-		$url = "https://api.github.com/repos/amplab/tachyon/releases?access_token={{site.github_key}}";
-		$options  = array('http' => array('user_agent'=> $_SERVER['HTTP_USER_AGENT']));
-		$context  = stream_context_create($options);
-		$response = file_get_contents($url, false, $context);
-		foreach(json_decode($response) as $release) {
-			if(strtotime($release->created_at) > microtime(true) - $month) {
+		$api = new Github\Api;
+		$token = new Github\OAuth\Token("{{site.github_key}}");
+		$api->setToken($token);
+		foreach ($api->paginator('/repos/amplab/tachyon/contributors') as $response) {
+			array_push($contributors, $api->decode($response));
+		}
+		foreach($contributors as $contributorPage) {
+			foreach($contributorPage as $contributor) {
+				array_push($contributorsMin, array(
+					'login' => $contributor->login,
+					'avatar_url' => $contributor->avatar_url,
+					'contributions' => $contributor->contributions
+				));
+			}
+		}
+
+		$response = $api->get('/repos/amplab/tachyon');
+		$repoInfo = $api->decode($response);
+		$stars = $repoInfo->stargazers_count;
+		$commits = 0;
+		foreach ($contributorsMin as $contributor) {
+			$commits += $contributor['contributions'];
+		}
+		array_push($stats, array(
+			'stars' => $stars,
+			'commits' => $commits,
+			'contributors' => count($contributorsMin)
+		));
+
+		$response = $api->get('/repos/amplab/tachyon/releases');
+		$releases = $api->decode($response);
+		foreach ($releases as $release) {
+			if(strtotime($release->created_at) > microtime(true) - $pastNewsLimit) {
 				array_push($news, array(
 					"title" => "[RELEASE] " . $release->name,
-					"date" => strtotime($release->created_at),
+					"date" => 1000 * strtotime($release->created_at),
 					"link" => $release->html_url,
 					"type" => "github"
 				));
@@ -134,13 +159,15 @@ else {
 		    }
 		    fclose($handle);
 			for ($i = 1; $i < count($events_spreadsheet_data); $i++) {
-				array_push($events, array(
-					"title" => $events_spreadsheet_data[$i][1],
-					"date" => 1000 * strtotime($events_spreadsheet_data[$i][0]),
-					"desc" => substr($events_spreadsheet_data[$i][2], 0, 150),
-					"link" => $events_spreadsheet_data[$i][3],
-					"type" => "event"
-				));
+				if(strtotime($events_spreadsheet_data[$i][0]) > microtime(true) - $pastNewsLimit) {
+					array_push($events, array(
+						"title" => $events_spreadsheet_data[$i][1],
+						"date" => 1000 * strtotime($events_spreadsheet_data[$i][0]),
+						"desc" => substr($events_spreadsheet_data[$i][2], 0, 150),
+						"link" => $events_spreadsheet_data[$i][3],
+						"type" => "event"
+					));
+				}
 			}
 
 		}
@@ -154,12 +181,14 @@ else {
 		    }
 		    fclose($handle);
 			for ($i = 1; $i < count($news_spreadsheet_data); $i++) {
-				array_push($news, array(
-					"title" => $news_spreadsheet_data[$i][1],
-					"date" => strtotime($news_spreadsheet_data[$i][0]),
-					"link" => $news_spreadsheet_data[$i][2],
-					"type" => "news"
-				));
+				if(strtotime($news_spreadsheet_data[$i][0]) > microtime(true) - $pastNewsLimit) {
+					array_push($news, array(
+						"title" => $news_spreadsheet_data[$i][1],
+						"date" => 1000 * strtotime($news_spreadsheet_data[$i][0]),
+						"link" => $news_spreadsheet_data[$i][2],
+						"type" => "news"
+					));
+				}
 			}
 
 		}
@@ -177,65 +206,37 @@ else {
 	}
 	usort($news, "sortByDate");
 	usort($events, "sortByDate");
-	foreach ($events as $item) {
-		$linkStart = "";
-		$linkEnd = "";
-		$footnote = "";
-		$source = "";
+	// foreach ($events as $item) {
+	// 	$linkStart = "";
+	// 	$linkEnd = "";
+	// 	$footnote = "";
+	// 	$source = "";
+	//
+	// 	if($item['link'] !== "") {
+	// 		$linkStart = "<a target='_blank' href='" . $item['link'] . "'>";
+	// 		$linkEnd = "</a>";
+	//
+	// 		if($item['type'] == "meetup") {
+	// 			$footnote = "<div class='footnote'>via Meetup.com</div>";
+	// 		}
+	// 	}
+    //     $calendar = "<div class='calendar'>
+	// 		            <div class='month'>" .  date('M', $item['date'] / 1000) ."</div>
+	// 		            <div class='date'>" .  date('j', $item['date'] / 1000) . "</div>
+	// 				</div>";
+	//     echo $linkStart . "
+	// 		<div class='item " . $item['type'] . "'>
+	// 			" . $calendar . "
+	// 			<div class='content'>
+	// 				<h1>" . $item['title'] . "</h1>
+	// 				<p>
+	// 					" . $item['desc'] . "...
+	// 				</p>
+	// 				" . $footnote . "
+	// 			</div>
+	// 		</div>" . $linkEnd;
+	// }
 
-		if($item['link'] !== "") {
-			$linkStart = "<a target='_blank' href='" . $item['link'] . "'>";
-			$linkEnd = "</a>";
-
-			if($item['type'] == "meetup") {
-				$footnote = "<div class='footnote'>via Meetup.com</div>";
-			}
-		}
-        $calendar = "<div class='calendar'>
-			            <div class='month'>" .  date('M', $item['date'] / 1000) ."</div>
-			            <div class='date'>" .  date('j', $item['date'] / 1000) . "</div>
-					</div>";
-	    echo $linkStart . "
-			<div class='item " . $item['type'] . "'>
-				" . $calendar . "
-				<div class='content'>
-					<h1>" . $item['title'] . "</h1>
-					<p>
-						" . $item['desc'] . "...
-					</p>
-					" . $footnote . "
-				</div>
-			</div>" . $linkEnd;
-	}
-
-	try
-	{
-		$api = new Github\Api;
-		$token = new Github\OAuth\Token("{{site.github_key}}");
-		$api->setToken($token);
-		foreach ($api->paginator('/repos/amplab/tachyon/contributors') as $response) {
-		    array_push($contributors, $api->decode($response));
-		}
-		foreach($contributors as $contributorPage) {
-			foreach($contributorPage as $contributor) {
-				array_push($contributorsMin, array(
-					'login' => $contributor->login,
-					'avatar_url' => $contributor->avatar_url,
-					'contributions' => $contributor->contributions
-				));
-			}
-		}
-		$response = $api->get('/repos/amplab/tachyon');
-		$repoInfo = $api->decode($response);
-		$stars = $repoInfo->stargazers_count;
-		array_push($stats, array(
-			'stars' => $stars
-		));
-	}
-	catch(Exception $e)
-	{
-		//echo $e->getMessage();
-	}
 	$fp = fopen($eventscache, "w");
 	fwrite($fp, json_encode($events));
 	fclose($fp);
