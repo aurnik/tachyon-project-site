@@ -6,8 +6,8 @@ $contributorcache = "../cache/contributors.json";
 $cachetime = 60 * 60 * 12; // 12 hours
 $contributors;
 if(file_exists($contributorcache) && (time() - $cachetime < filemtime($contributorcache))) {
-	$cachedata = file_get_contents($contributorcache);
-	$contributors = json_decode($cachedata);
+	// $cachedata = file_get_contents($contributorcache);
+	// $contributors = json_decode($cachedata);
 }
 else {
 
